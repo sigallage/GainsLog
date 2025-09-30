@@ -86,7 +86,7 @@ const AIRecipeGenerator = () => {
           Authorization: `Bearer ${typeof token === 'object' ? token.access_token : token}`,
           "Content-Type": "application/json"
         },
-        timeout: 10000
+        timeout: 30000
       });
 
       setRecipe(response.data.recipe);
