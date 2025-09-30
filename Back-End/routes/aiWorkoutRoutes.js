@@ -5,6 +5,22 @@ import dotenv from 'dotenv';
 dotenv.config();
 const router = express.Router();
 
+// Function to clean workout text from markdown formatting and add proper spacing
+function cleanWorkoutText(text) {
+  return text
+    .replace(/#{1,6}\s*/g, '') 
+    .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1') 
+    .replace(/^\s*[\*\-•]\s+/gm, '') 
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]/gu, '') 
+    .replace(/🏋️|🔥|💪|🧘|🦵|🔙|😊/g, '') // Remove specific emojis as fallback
+    .replace(/^\s+/gm, '') 
+    .replace(/(Day \d+:)/g, '\n\n$1') // Add spacing before each day
+    .replace(/(Warm-up|Cool-down|Rest):/gi, '\n$1:') // Add spacing before major sections
+    .replace(/(\d+ sets? of \d+)/g, '\n  $1') // Indent exercise details
+    .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
+    .trim();
+}
+
 // Alternative free AI providers
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL; // Optional: For self-hosted models
@@ -32,7 +48,7 @@ router.post('/generate', async (req, res) => {
     if (hfResponse.data?.generated_text) {
       return res.json({
         source: 'huggingface',
-        workout: hfResponse.data.generated_text
+        workout: cleanWorkoutText(hfResponse.data.generated_text)
       });
     }
   } catch (hfError) {
@@ -64,7 +80,7 @@ router.post('/generate', async (req, res) => {
     if (orResponse.data?.choices?.[0]?.message?.content) {
       return res.json({
         source: 'openrouter',
-        workout: orResponse.data.choices[0].message.content
+        workout: cleanWorkoutText(orResponse.data.choices[0].message.content)
       });
     }
   } catch (orError) {
@@ -83,7 +99,7 @@ router.post('/generate', async (req, res) => {
       );
       return res.json({
         source: 'local_llm',
-        workout: localResponse.data?.result || 'Local model response empty'
+        workout: cleanWorkoutText(localResponse.data?.result || 'Local model response empty')
       });
     }
   } catch (localError) {
@@ -204,7 +220,7 @@ router.post('/generate', async (req, res) => {
 
   res.json({
     source: 'fallback',
-    workout: selectedWorkout,
+    workout: cleanWorkoutText(selectedWorkout),
     message: 'AI services unavailable, using curated workout plan'
   });
 });
