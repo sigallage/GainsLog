@@ -66,7 +66,7 @@ const WorkoutGenerator = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        timeout: 10000
+        timeout: 30000  // Increased to 30 seconds to allow for multiple AI service attempts
       });
 
       setWorkout(response.data.workout);
@@ -112,19 +112,28 @@ const WorkoutGenerator = () => {
       </select>
 
       <button onClick={generateWorkout} disabled={loading}>
-        {loading ? "Generating..." : "Get Workout Plan"}
+        {loading ? "Generating your perfect workout..." : "Get Workout Plan"}
       </button>
+
+      {loading && (
+        <div className="loading-message">
+          <p>Our AI is crafting your personalized workout...</p>
+          <small>This may take up to 30 seconds for the best results!</small>
+        </div>
+      )}
 
       {error && (
         <div className="error-message">
-          {error}
+          <strong>Error:</strong> {error}
+          <br />
+          <small>Don't worry! Try again or check your internet connection.</small>
           <button onClick={() => setError(null)}>Dismiss</button>
         </div>
       )}
 
       {workout && (
         <div className="workout-output">
-          <h3>🏋️ Your Workout Plan:</h3>
+          <h3>Your Workout Plan:</h3>
           <pre>{workout}</pre>
         </div>
       )}

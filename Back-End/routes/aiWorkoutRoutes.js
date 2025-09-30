@@ -12,7 +12,7 @@ const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL; // Optional: For self-hosted mo
 router.post('/generate', async (req, res) => {
   const { level = 'beginner', experience = '4', workoutType = 'strength' } = req.body;
 
-  // 1. First try Hugging Face with correct endpoint format
+  // 1. First try Hugging Face with reduced timeout for faster fallback
   try {
     const hfResponse = await axios.post(
       'https://api-inference.huggingface.co/pipeline/text-generation/mistralai/Mistral-7B-Instruct-v0.1',
@@ -25,7 +25,7 @@ router.post('/generate', async (req, res) => {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 8000  // Reduced timeout for faster fallback
       }
     );
     
@@ -57,7 +57,7 @@ router.post('/generate', async (req, res) => {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 8000  // Reduced timeout for faster fallback
       }
     );
 
@@ -90,35 +90,122 @@ router.post('/generate', async (req, res) => {
     console.log('Local LLM failed:', localError.message);
   }
 
-  // Ultimate fallback - Hardcoded workouts
+  // Ultimate fallback - Comprehensive hardcoded workouts
   const fallbackWorkouts = {
     beginner: {
-      strength: `🏋️ Warm-up:
-1. Bodyweight squats - 2x10
-2. Arm circles - 1min
+      'full body': `🏋️ BEGINNER FULL BODY WORKOUT
 
-🔥 Main Workout:
-1. Push-ups - 3x8
-2. Dumbbell rows - 3x10
-3. Bodyweight lunges - 3x8 per leg
+🔥 Warm-up (5 mins):
+• Light cardio - 2 mins
+• Arm circles - 30 sec each direction
+• Body weight squats - 10 reps
+• Jumping jacks - 1 min
 
-🧘 Cooldown:
-1. Hamstring stretch - 30sec
-2. Chest stretch - 30sec`
+� Main Workout:
+1. Push-ups (modified if needed) - 3 sets x 8-12 reps
+2. Bodyweight squats - 3 sets x 12-15 reps
+3. Lunges (each leg) - 3 sets x 8-10 reps
+4. Plank hold - 3 sets x 20-30 seconds
+5. Dumbbell rows (or resistance band) - 3 sets x 10-12 reps
+
+🧘 Cool down (5 mins):
+• Hamstring stretch - 30 sec each leg
+• Chest stretch - 30 sec
+• Shoulder stretch - 30 sec each arm
+• Deep breathing - 2 mins`,
+      
+      'leg day': `🦵 BEGINNER LEG DAY
+
+🔥 Warm-up:
+• Light walking - 3 mins
+• Leg swings - 10 each direction
+• Bodyweight squats - 10 reps
+
+💪 Main Workout:
+1. Goblet squats - 3 sets x 12-15 reps
+2. Romanian deadlifts (light weight) - 3 sets x 10-12 reps
+3. Walking lunges - 3 sets x 10 each leg
+4. Calf raises - 3 sets x 15-20 reps
+5. Wall sit - 3 sets x 20-30 seconds`,
+      
+      'chest day': `💪 BEGINNER CHEST DAY
+
+🔥 Warm-up:
+• Arm circles - 1 min
+• Light shoulder rolls - 30 sec
+• Push-up prep stretches - 2 mins
+
+💪 Main Workout:
+1. Push-ups (modified if needed) - 3 sets x 8-12 reps
+2. Incline push-ups (on bench/step) - 3 sets x 10-15 reps
+3. Chest press with dumbbells - 3 sets x 10-12 reps
+4. Chest flyes (light weight) - 3 sets x 10-12 reps`,
+      
+      'back & biceps': `🔙 BEGINNER BACK & BICEPS
+
+💪 Main Workout:
+1. Bent-over dumbbell rows - 3 sets x 10-12 reps
+2. Lat pulldowns (or assisted pull-ups) - 3 sets x 8-10 reps
+3. Bicep curls - 3 sets x 12-15 reps
+4. Hammer curls - 3 sets x 10-12 reps
+5. Reverse flyes - 3 sets x 12-15 reps`,
+      
+      'shoulders & triceps': `� BEGINNER SHOULDERS & TRICEPS
+
+💪 Main Workout:
+1. Overhead press (light weight) - 3 sets x 10-12 reps
+2. Lateral raises - 3 sets x 12-15 reps
+3. Front raises - 3 sets x 10-12 reps
+4. Tricep dips (assisted) - 3 sets x 8-10 reps
+5. Tricep extensions - 3 sets x 10-12 reps`
     },
+    
     intermediate: {
-      hiit: `🔥 HIIT Workout (40s work/20s rest):
-1. Jump squats
-2. Burpees
-3. Mountain climbers
-4. Plank shoulder taps
-5. Jumping lunges`
+      'full body': `🏋️ INTERMEDIATE FULL BODY WORKOUT
+
+💪 Main Workout:
+1. Barbell squats - 4 sets x 8-10 reps
+2. Bench press - 4 sets x 8-10 reps
+3. Bent-over rows - 4 sets x 8-10 reps
+4. Overhead press - 3 sets x 10-12 reps
+5. Romanian deadlifts - 3 sets x 10-12 reps
+6. Pull-ups/chin-ups - 3 sets x 6-10 reps
+7. Plank - 3 sets x 45-60 seconds`,
+      
+      'leg day': `🦵 INTERMEDIATE LEG DAY
+
+💪 Main Workout:
+1. Back squats - 4 sets x 8-10 reps
+2. Romanian deadlifts - 4 sets x 8-10 reps
+3. Bulgarian split squats - 3 sets x 10 each leg
+4. Hip thrusts - 3 sets x 12-15 reps
+5. Walking lunges - 3 sets x 12 each leg
+6. Calf raises - 4 sets x 15-20 reps`
+    },
+    
+    advanced: {
+      'full body': `🏋️ ADVANCED FULL BODY WORKOUT
+
+💪 Main Workout:
+1. Deadlifts - 5 sets x 5 reps
+2. Bench press - 4 sets x 6-8 reps
+3. Pull-ups (weighted if possible) - 4 sets x 8-12 reps
+4. Overhead press - 4 sets x 6-8 reps
+5. Barbell rows - 4 sets x 8-10 reps
+6. Front squats - 4 sets x 8-10 reps
+7. Dips - 3 sets x 10-15 reps`
     }
   };
 
+  // Get workout based on level and type, with intelligent fallbacks
+  let selectedWorkout = fallbackWorkouts[level]?.[workoutType] || 
+                       fallbackWorkouts[level]?.[Object.keys(fallbackWorkouts[level])[0]] ||
+                       fallbackWorkouts.beginner['full body'];
+
   res.json({
     source: 'fallback',
-    workout: fallbackWorkouts[level]?.[workoutType] || fallbackWorkouts.beginner.strength
+    workout: selectedWorkout,
+    message: 'AI services unavailable, using curated workout plan'
   });
 });
 
